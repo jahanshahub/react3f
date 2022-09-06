@@ -1,7 +1,7 @@
 import "./App.css";
 import { ethers } from "ethers";
 import { useState, useEffect } from "react";
-import { GiTroll } from "react-icons/gi";
+import { GiTroll, GiBoltSpellCast } from "react-icons/gi";
 import abi from "./abi/abi.json";
 import data from "./data/data.json";
 
@@ -10,16 +10,22 @@ function App() {
   const [provider, setProvider] = useState(null);
   const [nfts, setNfts] = useState(data);
 
-  const balance = async () => {
-    const contract = new ethers.Contract(
-      "0x0435c4169C37ba32721dB46F2C06B7D11991db3D",
-      abi,
-      provider
-    );
-    const tempBalance = await contract.balanceOf(
-      "0x8b96A27A5fdbA39Ac5FD0c71d6368BDDB8349699"
-    );
-    console.log(tempBalance.toString());
+  const balance = async (nft) => {
+    const contract = new ethers.Contract(nft.address, abi, provider);
+    const tempBalance = await contract.balanceOf(account);
+    const tempNfts = [...nfts.list];
+    const tempNft = tempNfts[tempNfts.findIndex((obj) => obj.id == nft.id)];
+    tempNft.owner = tempBalance > 0;
+    tempNft.count = tempBalance.toString();
+    setNfts({
+      "list": tempNfts
+    });
+  };
+
+  const checkCollection = () => {
+    data.list.forEach((nft) => {
+     balance(nft);
+    });
   };
 
   const initConnection = async () => {
@@ -39,8 +45,11 @@ function App() {
 
   useEffect(() => {
     initConnection();
-    console.log(nfts.list);
   }, []);
+
+  useEffect(() => {
+    checkCollection();
+  }, [account]);
 
   return (
     <div className="page">
@@ -66,7 +75,28 @@ function App() {
         {nfts.list.map((nft, index) => {
           return (
             <div key={index} className="card">
-              <img src={require (`./assets/images/${nft.id}.${nft.type}`)} className="nftImage" /> 
+              <div style={{ position: "relative" }}>
+                <a
+                  target={"_blank"}
+                  href={`https://opensea.io/collection/${nft.link}`}
+                >
+                  <img
+                    src={require(`./assets/images/opensea-logo.png`)}
+                    className="cardImage"
+                  />
+                </a>
+                <GiBoltSpellCast
+                  className="cardImage"
+                  style={{ opacity: nft.owner ? 1 : 0.2 }}
+                />
+                <p className="counter"> {nft.count} </p>
+              </div>
+
+              <img
+                src={require(`./assets/images/${nft.id}.${nft.type}`)}
+                className="nftImage"
+                style={{ opacity: nft.owner ? 1 : 0.2 }}
+              />
               <p className="nftText"> {nft.name}</p>
             </div>
           );
